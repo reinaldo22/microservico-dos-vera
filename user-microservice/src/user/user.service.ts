@@ -1,4 +1,4 @@
-import { BadGatewayException, BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/entity/User';
@@ -12,8 +12,11 @@ export class UserService {
     constructor(
         @InjectRepository(User)
         private readonly usersRepository: Repository<User>,
+
+
     ) { }
 
+  
     private readonly logger = new Logger(UserService.name);
 
     async findAll(): Promise<User[] | any> {
@@ -42,9 +45,9 @@ export class UserService {
         }
     }
 
-    async create(data: CreateUserDto){
+    async create(data: CreateUserDto) {
         try {
-            
+
             const userCreate = this.usersRepository.create(data)
             return await this.usersRepository.save(userCreate)
         } catch (error) {
@@ -73,6 +76,33 @@ export class UserService {
             throw new RpcException(error.message);
         }
     }
+
+    async findCredential(email: string) {
+        this.logger.debug(`PARASSANDO no findCredential -UserService: ${JSON.stringify(email)}`);
+        try {
+            const user: User = await this.usersRepository.findOneBy({
+                email: email
+            })
+            return user;
+        } catch (error) {
+            this.logger.error(`error: ${JSON.stringify(error.message)}`);
+            throw new RpcException(error.message);
+        }
+    }
+
+    async findOneOrFail(email: string) {
+        this.logger.debug(`PARASSANDO no findOneOrFail -UserService: ${JSON.stringify(email)}`);
+        try {
+            const user: User = await this.usersRepository.findOneBy({
+                email: email
+            })
+            return user;
+        } catch (error) {
+            this.logger.error(`error: ${JSON.stringify(error.message)}`);
+            throw new RpcException(error.message);
+        }
+    }
+
 }
 
 

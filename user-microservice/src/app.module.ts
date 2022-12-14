@@ -1,9 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { UserModule } from './user/user.module';
+import { UserModuleMicro } from './user/user.module';
 import { ConfigModule } from '@nestjs/config';
 import { User } from './entity/User';
-
 
 @Module({
   imports: [
@@ -17,9 +16,9 @@ import { User } from './entity/User';
       database: process.env.TYPEORM_DATABASE,
       entities: [User],
       synchronize: true
-    } as TypeOrmModuleOptions) , UserModule],
+    } as TypeOrmModuleOptions) , UserModuleMicro],
   controllers: [],
   providers: [],
  
 })
-export class AppModule { }
+export class AppModuleMicro { }

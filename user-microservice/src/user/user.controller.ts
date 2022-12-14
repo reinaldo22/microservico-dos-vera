@@ -3,10 +3,9 @@ import { UserService } from './user.service';
 import { Ctx, EventPattern, MessagePattern, Payload, RmqContext } from '@nestjs/microservices';
 import { CreateUserDto } from './userDTO/userDTO';
 import { UpdateUserDTO } from './userDTO/updateUserDTO';
-import { Pagination } from 'nestjs-typeorm-paginate';
-import { User } from 'src/entity/User';
 
-const ackErrors: string[] = ['E11000', 'Usuario exists']
+
+const ackErrors: string[] = ['E11000', 'Usuario exists', 'Http Status: 500 Error Message', 'Bad Request Exception']
 
 @Controller('users')
 export class UserController {
@@ -22,9 +21,7 @@ export class UserController {
 
         const channel = context.getChannelRef()
         const originalMsg = context.getMessage()
-
-        this.logger.log(`usuario criado: ${JSON.stringify(user)}`)
-
+        this.logger.debug(`DADOS VINDO DA API GATEWAY:  ${JSON.stringify(user)}`)
         try {
             await this.userService.create(user)
             await channel.ack(originalMsg);
@@ -40,17 +37,43 @@ export class UserController {
 
     }
 
-    @MessagePattern('consultar-todos')
-    async getAll(@Payload() id: string, @Ctx() context: RmqContext): Promise<Pagination<User>> {
+    @EventPattern('consulta-credenciais')
+    async login(@Payload() user: string, @Ctx() context: RmqContext) {
+
 
         const channel = context.getChannelRef()
         const originalMsg = context.getMessage()
 
         try {
-            return this.userService.findAll()
+            console.log(`>>>>>>Chegou no controller do micro>>>>>${JSON.stringify(user)}`)
+            return this.userService.findCredential(user)
         } finally {
             await channel.ack(originalMsg)
         }
+
+    }
+
+    @MessagePattern('consultar-todos')
+    async getAll(@Payload() id: string, @Ctx() context: RmqContext) {
+
+        const channel = context.getChannelRef()
+        const originalMsg = context.getMessage()
+
+        try {
+            return await this.userService.findAll()
+
+        } catch (error) {
+            this.logger.error(`error:  ${JSON.stringify(error.message)}`)
+            const filterAckError = ackErrors.filter(
+                ackError => error.message.includes(ackError))
+            if (filterAckError) {
+                await channel.ack(originalMsg)
+            }
+        } finally {
+            await channel.ack(originalMsg);
+        }
+
+
     }
 
     @EventPattern('atualizar-usuario')

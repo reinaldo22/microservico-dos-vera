@@ -4,12 +4,16 @@ import { AllExceptionsFilter } from './common/filters/http-exception-filter';
 import { LoggingInterceptor } from './common/interceptor/logging.interceptor';
 import { TimeoutInterceptor } from './common/interceptor/timeout.interceptor';
 import * as momentTimezone from 'moment-timezone';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.useGlobalInterceptors(new LoggingInterceptor(), new TimeoutInterceptor());
   app.useGlobalFilters(new AllExceptionsFilter());
+  // app.useGlobalPipes(
+  //   new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
+  // );
 
   Date.prototype.toJSON = function (): any {
     return momentTimezone(this)

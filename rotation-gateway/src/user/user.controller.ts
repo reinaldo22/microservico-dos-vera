@@ -1,9 +1,10 @@
 import { Body, Controller, Delete, Get, Logger, Param, Post, Put, Query, Req, Res, UsePipes, ValidationPipe } from '@nestjs/common';
-import { BadRequestException } from '@nestjs/common/exceptions';
 import { RpcException } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
+import { IsPublic } from 'src/auth/decorators/is-public-decorators';
 import { ValidacaoParametrosPipe } from 'src/common/pipe/validacao-parametro';
 import { ProxySmartRotation } from 'src/proxyrmqp/client-proxy';
+import { UsersService } from './user-service.service';
 import { UpdateUserDTO } from './userDTO/updateUserDTO';
 import { CreateUserDto } from './userDTO/userDTO';
 
@@ -12,13 +13,13 @@ export class UserController {
 
     private logger = new Logger(UserController.name)
 
-    constructor(private proxySmartRotation: ProxySmartRotation) {
+    constructor(private proxySmartRotation: ProxySmartRotation, private readonly userService: UsersService) {
 
     }
 
     private clientAdminBackend = this.proxySmartRotation.getClientProxyAdminBackendInstance()
 
-
+    @IsPublic()
     @Post()
     @UsePipes(ValidationPipe)
     async createUser(@Body(ValidacaoParametrosPipe) userDTO: CreateUserDto) {
@@ -26,7 +27,6 @@ export class UserController {
         this.logger.log(` api-gateway: ${JSON.stringify(userDTO)}`)
         const user = await this.clientAdminBackend.send('consultar-todos', userDTO).toPromise()
         const emailExists = await user.some(elem => elem.email == userDTO.email)
-        console.log(emailExists)
         if (emailExists === true) {
             throw new RpcException("Usuario exists");
         }
@@ -56,4 +56,11 @@ export class UserController {
     deleteUser(@Param('id', ValidacaoParametrosPipe) id: string) {
         this.clientAdminBackend.emit('deletar-user', { id });
     }
+
+    // @Post('/login')
+    // @UsePipes(ValidationPipe)
+    // login(@Body(ValidacaoParametrosPipe) loginDTO: UpdateUserDTO) {
+        
+    //     return this.clientAdminBackend.send('consulta-credenciais', loginDTO)
+    // }
 }
